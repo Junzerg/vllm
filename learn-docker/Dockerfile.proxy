@@ -1,0 +1,16 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Install curl for healthcheck
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
+# Install required dependencies
+RUN pip install --no-cache-dir quart aiohttp pyzmq msgpack
+
+# Copy proxy server file
+COPY learn-docker/disagg_proxy_p2p_nccl_xpyd.py /app/
+
+# Run the proxy server
+CMD ["python3", "/app/disagg_proxy_p2p_nccl_xpyd.py"]
+

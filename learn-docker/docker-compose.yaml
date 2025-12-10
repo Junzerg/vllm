@@ -1,0 +1,97 @@
+version: '3.8'
+
+services:
+  prefill:
+    image: vllm/vllm-openai:v0.11.2
+    container_name: vllm-prefill
+    runtime: nvidia
+    environment:
+      - VLLM_HOST_IP=prefill
+    volumes:
+      - /data/models/qwen3-14b:/models/qwen3-14b:ro
+    command: >
+      --model /models/qwen3-14b
+      --host 0.0.0.0
+      --port 8100
+      --max-model-len 8192
+      --gpu-memory-utilization 0.8
+      --trust-remote-code
+      --kv-transfer-config '{"kv_connector":"P2pNcclConnector","kv_role":"kv_producer","kv_rank":0,"kv_parallel_size":2,"kv_port":21001,"kv_connector_extra_config":{"proxy_ip":"proxy","proxy_port":"30001","http_port":"8100","send_type":"PUT_ASYNC","nccl_num_channels":"16"}}'
+    ports:
+      - "8100:8100"
+      - "21001:21001"
+    networks:
+      - vllm-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['4']
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8100/v1/models"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  decode:
+    image: vllm/vllm-openai:v0.11.2
+    container_name: vllm-decode
+    runtime: nvidia
+    environment:
+      - VLLM_HOST_IP=decode
+    volumes:
+      - /data/models/qwen3-14b:/models/qwen3-14b:ro
+    command: >
+      --model /models/qwen3-14b
+      --host 0.0.0.0
+      --port 8200
+      --max-model-len 8192
+      --gpu-memory-utilization 0.8
+      --trust-remote-code
+      --kv-transfer-config '{"kv_connector":"P2pNcclConnector","kv_role":"kv_consumer","kv_rank":1,"kv_parallel_size":2,"kv_port":22001,"kv_connector_extra_config":{"proxy_ip":"proxy","proxy_port":"30001","http_port":"8200","send_type":"PUT_ASYNC","nccl_num_channels":"16"}}'
+    ports:
+      - "8200:8200"
+      - "22001:22001"
+    networks:
+      - vllm-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ['5']
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8200/v1/models"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+
+  proxy:
+    build:
+      context: ..
+      dockerfile: learn-docker/Dockerfile.proxy
+    container_name: vllm-proxy
+    environment:
+      - ZMQ_PORT=30001
+      - HTTP_PORT=8000
+    ports:
+      - "8000:8000"
+      - "30001:30001"
+    networks:
+      - vllm-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/v1/completions"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  vllm-network:
+    driver: bridge
+
