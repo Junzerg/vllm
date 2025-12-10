@@ -74,7 +74,7 @@ services:
   proxy:
     build:
       context: ..
-      dockerfile: learn-docker/Dockerfile.proxy
+      dockerfile: /Dockerfile.proxy
     container_name: vllm-proxy
     environment:
       - ZMQ_PORT=30001
