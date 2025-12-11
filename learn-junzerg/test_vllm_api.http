@@ -1,0 +1,317 @@
+### vLLM API 测试文件
+### 根据你的配置修改端口和模型名称
+
+@baseUrl = http://localhost:8000
+@model = qwen3-0.6b
+@apiKey = your-api-key-here
+
+### 1. 健康检查
+GET {{baseUrl}}/health
+
+### 2. 获取版本信息
+GET {{baseUrl}}/version
+
+### 3. 列出可用模型
+GET {{baseUrl}}/v1/models
+
+### 4. 聊天完成 - 非流式
+POST {{baseUrl}}/v1/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "{{model}}",
+  "messages": [
+    {
+      "role": "user",
+      "content": "你是谁"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 100
+}
+
+### 5. 聊天完成 - 流式响应
+POST {{baseUrl}}/v1/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "{{model}}",
+  "messages": [
+    {
+      "role": "user",
+      "content": "用一句话解释什么是人工智能"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 50,
+  "stream": true
+}
+
+### 6. 多轮对话
+POST {{baseUrl}}/v1/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "{{model}}",
+  "messages": [
+    {
+      "role": "system",
+      "content": "你是一个有用的AI助手"
+    },
+    {
+      "role": "user",
+      "content": "什么是机器学习？"
+    },
+    {
+      "role": "assistant",
+      "content": "机器学习是人工智能的一个分支，它使计算机能够从数据中学习，而无需明确编程。"
+    },
+    {
+      "role": "user",
+      "content": "能给我举个例子吗？"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 150
+}
+
+### 7. 文本完成 (Completion)
+POST {{baseUrl}}/v1/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "{{model}}",
+  "prompt": "人工智能是",
+  "temperature": 0.7,
+  "max_tokens": 50,
+  "stop": ["。", "\n"]
+}
+
+### 8. 嵌入 (Embedding)
+POST {{baseUrl}}/v1/embeddings
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "{{model}}",
+  "input": "这是一个测试文本"
+}
+
+### 9. 批量嵌入
+POST {{baseUrl}}/v1/embeddings
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "{{model}}",
+  "input": [
+    "第一个文本",
+    "第二个文本",
+    "第三个文本"
+  ]
+}
+
+### 10. Tokenize (分词)
+POST {{baseUrl}}/tokenize
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "{{model}}",
+  "prompt": "Hello, world! 你好，世界！"
+}
+
+### 11. Detokenize (反分词)
+POST {{baseUrl}}/detokenize
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "{{model}}",
+  "tokens": [15496, 11, 1917, 0, 151643, 45143, 11, 1917, 0]
+}
+
+### 12. 带工具调用的聊天 (如果模型支持)
+POST {{baseUrl}}/v1/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "{{model}}",
+  "messages": [
+    {
+      "role": "user",
+      "content": "今天北京的天气怎么样？"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 100,
+  "tools": [
+    {
+      "type": "function",
+      "function": {
+        "name": "get_weather",
+        "description": "获取指定城市的天气信息",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "city": {
+              "type": "string",
+              "description": "城市名称"
+            }
+          },
+          "required": ["city"]
+        }
+      }
+    }
+  ],
+  "tool_choice": "auto"
+}
+
+### 13. 服务器负载信息
+GET {{baseUrl}}/load
+
+### 14. 使用动态变量 - 随机温度
+POST {{baseUrl}}/v1/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "{{model}}",
+  "messages": [
+    {
+      "role": "user",
+      "content": "写一首关于春天的短诗"
+    }
+  ],
+  "temperature": {{$random.float(0.5, 1.0)}},
+  "max_tokens": 100
+}
+
+### 15. 使用时间戳
+POST {{baseUrl}}/v1/chat/completions
+Content-Type: application/json
+Authorization: Bearer {{apiKey}}
+
+{
+  "model": "{{model}}",
+  "messages": [
+    {
+      "role": "user",
+      "content": "当前时间戳是 {{$timestamp}}，请告诉我这个时间戳对应的日期"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": null
+}
+
+###
+
+### ============================================
+### Prefill 服务测试 (端口 8100)
+### ============================================
+
+@prefillUrl = http://localhost:8100
+
+### Prefill - 健康检查
+GET {{prefillUrl}}/health
+
+### Prefill - 列出模型
+GET {{prefillUrl}}/v1/models
+
+### Prefill - 聊天完成
+POST {{prefillUrl}}/v1/chat/completions
+Content-Type: application/json
+
+{
+  "model": "{{model}}",
+  "messages": [
+    {
+      "role": "user",
+      "content": "测试 prefill 服务"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 50
+}
+
+###
+
+### ============================================
+### Decode 服务测试 (端口 8200)
+### ============================================
+
+@decodeUrl = http://localhost:8200
+
+### Decode - 健康检查
+GET {{decodeUrl}}/health
+
+### Decode - 列出模型
+GET {{decodeUrl}}/v1/models
+
+### Decode - 聊天完成
+POST {{decodeUrl}}/v1/chat/completions
+Content-Type: application/json
+
+{
+  "model": "{{model}}",
+  "messages": [
+    {
+      "role": "user",
+      "content": "测试 decode 服务"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 50
+}
+
+###
+
+### ============================================
+### Proxy 服务测试 (端口 8000)
+### ============================================
+
+@proxyUrl = http://localhost:8000
+
+### Proxy - 健康检查
+GET {{proxyUrl}}/health
+
+### Proxy - 聊天完成 (通过代理)
+POST {{proxyUrl}}/v1/chat/completions
+Content-Type: application/json
+
+{
+  "model": "{{model}}",
+  "messages": [
+    {
+      "role": "user",
+      "content": "测试通过代理的请求"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 100
+}
+
+### Proxy - 流式响应
+POST {{proxyUrl}}/v1/chat/completions
+Content-Type: application/json
+
+{
+  "model": "{{model}}",
+  "messages": [
+    {
+      "role": "user",
+      "content": "请用流式方式回答：什么是深度学习？"
+    }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 100,
+  "stream": true
+}
+
+###
+

@@ -8,9 +8,10 @@ services:
     environment:
       - VLLM_HOST_IP=prefill
     volumes:
-      - /data/models/qwen3-14b:/models/qwen3-14b:ro
+      - /mnt/f/models/qwen3-0.6b:/models/qwen3-0.6b:ro
+      - /mnt/f/models/.cache/huggingface:/root/.cache/huggingface
     command: >
-      --model /models/qwen3-14b
+      --model /models/qwen3-0.6b
       --host 0.0.0.0
       --port 8100
       --max-model-len 8192
@@ -27,7 +28,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['4']
+              device_ids: ['0']
               capabilities: [gpu]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8100/v1/models"]
@@ -43,9 +44,10 @@ services:
     environment:
       - VLLM_HOST_IP=decode
     volumes:
-      - /data/models/qwen3-14b:/models/qwen3-14b:ro
+      - /mnt/f/models/qwen3-0.6b:/models/qwen3-0.6b:ro
+      - /mnt/f/models/.cache/huggingface:/root/.cache/huggingface
     command: >
-      --model /models/qwen3-14b
+      --model /models/qwen3-0.6b
       --host 0.0.0.0
       --port 8200
       --max-model-len 8192
@@ -62,7 +64,7 @@ services:
         reservations:
           devices:
             - driver: nvidia
-              device_ids: ['5']
+              device_ids: ['1']
               capabilities: [gpu]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8200/v1/models"]
@@ -74,7 +76,7 @@ services:
   proxy:
     build:
       context: ..
-      dockerfile: /Dockerfile.proxy
+      dockerfile: learn-junzerg/Dockerfile.proxy
     container_name: vllm-proxy
     environment:
       - ZMQ_PORT=30001
